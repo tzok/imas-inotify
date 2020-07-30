@@ -2,6 +2,7 @@
 import argparse
 import os
 import pwd
+import re
 from typing import Tuple
 
 import pyinotify
@@ -11,8 +12,11 @@ MASK = pyinotify.EventsCodes.FLAG_COLLECTIONS['OP_FLAGS'][MASKNAME]
 
 
 class EventHandler:
-    def __init__(self):
+    def __init__(self, user: str, tokamak: str, version: str):
         self.__files = set()
+        self.__user = user
+        self.__tokamak = tokamak
+        self.__version = version
 
     def handle_event(self, event: pyinotify.Event):
         if event.maskname == MASKNAME:
@@ -22,7 +26,8 @@ class EventHandler:
             components = [f'{core}{extension}' for extension in ('.characteristics', '.datafile', '.tree')]
             if all(component in self.__files for component in components):
                 shot, run = self.parse_shot_run(core)
-                print(f'Data ready for shot={shot} and run={run}')
+                print(f'Data ready for user={self.__user} tokamak={self.__tokamak} version={self.__version} '
+                      f'shot={shot} run={run}')
                 for component in components:
                     self.__files.remove(component)
 
@@ -42,6 +47,14 @@ def generate_path(name: str, tokamak: str, version: str) -> str:
     return os.path.join(get_passwd(name).pw_dir, 'public', 'imasdb', tokamak, version)
 
 
+def parse_path(path: str) -> Tuple[str, str, str]:
+    match = re.search(r'.+/(.+?)/public/imasdb/(.+?)/([^/]+).*', os.path.abspath(path))
+    if match:
+        return match.group(1), match.group(2), match.group(3)
+    else:
+        return '', '', ''
+
+
 if __name__ == '__main__':
     user = get_passwd().pw_name
     tokamak = 'test'
@@ -58,6 +71,7 @@ if __name__ == '__main__':
 
     if args.path:
         path = args.path
+        user, tokamak, version = parse_path(path)
     elif args.user or args.tokamak or args.version:
         user = args.user if args.user else user
         tokamak = args.tokamak if args.tokamak else tokamak
@@ -66,7 +80,7 @@ if __name__ == '__main__':
 
     print(f'Establishing watches for {path}')
 
-    handler = EventHandler()
+    handler = EventHandler(user, tokamak, version)
 
     wm = pyinotify.WatchManager()
     notifier = pyinotify.Notifier(wm)
