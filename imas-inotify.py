@@ -23,7 +23,7 @@ class EventHandler:
             self.__files.add(event.pathname)
             core, _ = os.path.splitext(event.pathname)
 
-            components = [f'{core}{extension}' for extension in ('.characteristics', '.datafile', '.tree')]
+            components = [f'{core}{extension}' for extension in ('.characteristics', '.datafile', '.tree', '.populate')]
             if all(component in self.__files for component in components):
                 shot, run = self.parse_shot_run(core)
                 print(f'Data ready for user={self.__user} tokamak={self.__tokamak} version={self.__version} '

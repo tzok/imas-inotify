@@ -15,6 +15,7 @@
         docker run -it --rm --name=imas --volume $(pwd)/imasdb:/home/imas/public/imasdb imas/fc2k
         git clone https://github.com/tzok/imas-hello-world.git
         imas-hello-world/python/hello.py
+        touch public/imasdb/test/3/0/ids_10001.populate
 
 
 Expected outcome:
