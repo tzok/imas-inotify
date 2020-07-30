@@ -24,7 +24,7 @@ class EventHandler:
                 shot, run = self.parse_shot_run(core)
                 print(f'Data ready for shot={shot} and run={run}')
                 for component in components:
-                    del self.__files[component]
+                    self.__files.remove(component)
 
     def parse_shot_run(self, core: str) -> Tuple[int, int]:
         number = os.path.basename(core).replace('ids_', '')
