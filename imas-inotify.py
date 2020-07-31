@@ -58,16 +58,17 @@ if __name__ == '__main__':
                         default=path)
     args = parser.parse_args()
 
-    print(f'Establishing watches for {path}')
-
     handler = EventHandler()
     wm = pyinotify.WatchManager()
     notifier = pyinotify.Notifier(wm)
     wm.add_watch(path, MASK, proc_fun=handler.generate_handler(path, path), rec=True, auto_add=True)
+    print(f'Establishing watches for {path}')
+
     for subdir in os.listdir(path):
         subdir = os.path.join(path, subdir)
         if os.path.islink(subdir):
             realpath = os.path.realpath(subdir)
             abspath = os.path.abspath(subdir)
             wm.add_watch(subdir, MASK, proc_fun=handler.generate_handler(realpath, abspath), rec=True, auto_add=True)
+            print(f'Establishing watches for {realpath} -> {abspath}')
     notifier.loop()
