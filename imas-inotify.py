@@ -16,7 +16,7 @@ class EventHandler:
         self.__files = set()
 
     def generate_handler(self, realpath: str, abspath: str):
-        def handle_event(self, event: pyinotify.Event):
+        def handle_event(event: pyinotify.Event):
             if event.maskname == MASKNAME:
                 self.__files.add(event.pathname)
                 core, _ = os.path.splitext(event.pathname)
@@ -69,6 +69,6 @@ if __name__ == '__main__':
         if os.path.islink(subdir):
             realpath = os.path.realpath(subdir)
             abspath = os.path.abspath(subdir)
-            wm.add_watch(subdir, MASK, proc_fun=handler.generate_handler(realpath, abspath), rec=True, auto_add=True)
+            wm.add_watch(realpath, MASK, proc_fun=handler.generate_handler(realpath, abspath), rec=True, auto_add=True)
             print(f'Establishing watches for {realpath} -> {abspath}')
     notifier.loop()
