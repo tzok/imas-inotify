@@ -60,4 +60,9 @@ if __name__ == '__main__':
     wm = pyinotify.WatchManager()
     notifier = pyinotify.Notifier(wm)
     wm.add_watch(path, MASK, proc_fun=handler.handle_event, rec=True, auto_add=True)
+    for subdir in os.listdir(path):
+        subdir = os.path.join(path, subdir)
+        if os.path.islink(subdir):
+            subdir = os.path.realpath(subdir)
+            wm.add_watch(subdir, MASK, proc_fun=handler.handle_event, rec=True, auto_add=True)
     notifier.loop()
