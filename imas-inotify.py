@@ -28,7 +28,7 @@ class EventHandler:
                     self.__files.remove(component)
 
     def parse_path(self, core: str) -> Tuple[str, str, str, int, int]:
-        match = re.search(r'.+/(.+?)/public/imasdb/(.+?)/([^/]+).*', os.path.abspath(path))
+        match = re.search(r'.+/(.+?)/public/imasdb/(.+?)/([^/]+).*', core)
         user, tokamak, version = match.group(1), match.group(2), match.group(3)
         number = os.path.basename(core).replace('ids_', '')
         shot = int(number[:-4].lstrip('0'))  # last 4 digits are for run
