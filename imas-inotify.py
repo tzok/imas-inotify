@@ -15,17 +15,21 @@ class EventHandler:
     def __init__(self):
         self.__files = set()
 
-    def handle_event(self, event: pyinotify.Event):
-        if event.maskname == MASKNAME:
-            self.__files.add(event.pathname)
-            core, _ = os.path.splitext(event.pathname)
+    def generate_handler(self, realpath: str, abspath: str):
+        def handle_event(self, event: pyinotify.Event):
+            if event.maskname == MASKNAME:
+                self.__files.add(event.pathname)
+                core, _ = os.path.splitext(event.pathname)
 
-            components = [f'{core}{extension}' for extension in ('.characteristics', '.datafile', '.tree', '.populate')]
-            if all(component in self.__files for component in components):
-                user, tokamak, version, shot, run = self.parse_path(core)
-                print(f'Data ready for user={user} tokamak={tokamak} version={version} shot={shot} run={run}')
-                for component in components:
-                    self.__files.remove(component)
+                components = [f'{core}{extension}' for extension in
+                              ('.characteristics', '.datafile', '.tree', '.populate')]
+                if all(component in self.__files for component in components):
+                    user, tokamak, version, shot, run = self.parse_path(core.replace(realpath, abspath))
+                    print(f'Data ready for user={user} tokamak={tokamak} version={version} shot={shot} run={run}')
+                    for component in components:
+                        self.__files.remove(component)
+
+        return handle_event
 
     def parse_path(self, core: str) -> Tuple[str, str, str, int, int]:
         match = re.search(r'.+/(.+?)/public/imasdb/(.+?)/([^/]+).*', core)
@@ -59,10 +63,11 @@ if __name__ == '__main__':
     handler = EventHandler()
     wm = pyinotify.WatchManager()
     notifier = pyinotify.Notifier(wm)
-    wm.add_watch(path, MASK, proc_fun=handler.handle_event, rec=True, auto_add=True)
+    wm.add_watch(path, MASK, proc_fun=handler.generate_handler(path, path), rec=True, auto_add=True)
     for subdir in os.listdir(path):
         subdir = os.path.join(path, subdir)
         if os.path.islink(subdir):
-            subdir = os.path.realpath(subdir)
-            wm.add_watch(subdir, MASK, proc_fun=handler.handle_event, rec=True, auto_add=True)
+            realpath = os.path.realpath(subdir)
+            abspath = os.path.abspath(subdir)
+            wm.add_watch(subdir, MASK, proc_fun=handler.generate_handler(realpath, abspath), rec=True, auto_add=True)
     notifier.loop()
