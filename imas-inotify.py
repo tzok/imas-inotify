@@ -44,7 +44,7 @@ if __name__ == '__main__':
             pattern = os.path.expanduser(os.path.expandvars(ini[section]['glob']))
             recursive = bool(ini[section]['recursive'])
             action = ini[section]['action']
-            action_relative = bool(ini[section]['relative'])
+            action_relative = bool(ini[section]['action_relative'])
 
             for path in glob.iglob(pattern):
                 wm.add_watch(path, mask,
