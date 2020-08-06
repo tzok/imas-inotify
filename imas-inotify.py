@@ -22,6 +22,8 @@ class EventHandler:
 
 
 if __name__ == '__main__':
+    logging.basicConfig(level=logging.INFO)
+
     config = os.path.abspath(os.path.join(os.path.dirname(__file__), 'config.ini'))
 
     parser = argparse.ArgumentParser(description='Watch for creation of pulsefiles')
