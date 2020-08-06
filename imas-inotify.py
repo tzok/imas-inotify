@@ -8,17 +8,18 @@ import sys
 
 import pyinotify
 
-MASKNAME = 'IN_CLOSE_WRITE'
-MASK = pyinotify.EventsCodes.FLAG_COLLECTIONS['OP_FLAGS'][MASKNAME]
+CLOSE_WRITE = pyinotify.EventsCodes.FLAG_COLLECTIONS['OP_FLAGS']['IN_CLOSE_WRITE']
+CLOSE_NOWRITE = pyinotify.EventsCodes.FLAG_COLLECTIONS['OP_FLAGS']['IN_CLOSE_NOWRITE']
+MASK = CLOSE_WRITE | CLOSE_NOWRITE
 
 
 class EventHandler:
     def generate_handler(self, realpath: str, abspath: str, action: str, relative: bool):
         def handle_event(event: pyinotify.Event):
-            if event.maskname == MASKNAME:
+            if event.mask & MASK:
                 path = event.pathname.replace(realpath, abspath)
                 cwd = os.path.dirname(os.path.realpath(__file__)) if relative else None
-                print(f'Running {action} {path}' + f' in working directory {cwd}' if cwd else '')
+                print(f'Running {action} {path}' + (f' in working directory {cwd}' if cwd else ''))
                 subprocess.run([action, path], cwd=cwd)
 
         return handle_event
