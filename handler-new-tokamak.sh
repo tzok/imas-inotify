@@ -1,5 +1,2 @@
 #! /bin/bash
-for tokamak in /mnt/imasdb/*; do
-    [[ "${tokamak}" == "/mnt/imasdb/test" ]] && continue
-    ln -s "${tokamak}" /home/imas/public/imasdb/ 2>/dev/null
-done
+[[ ! -e "/home/imas/public/imasdb/$(basename $1)" ]] && ln -s "$1" /home/imas/public/imasdb/

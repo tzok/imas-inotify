@@ -11,12 +11,13 @@ import pyinotify
 
 
 class EventHandler:
-    def generate_handler(self, realpath: str, abspath: str, action: str, relative: bool):
+    def generate_handler(self, realpath: str, abspath: str, mask: int, action: str, relative: bool):
         def handle_event(event: pyinotify.Event):
-            path = event.pathname.replace(realpath, abspath)
-            cwd = os.path.dirname(os.path.realpath(__file__)) if relative else None
-            logging.debug(f'Running {action} {path}' + (f' in working directory {cwd}' if cwd else ''))
-            subprocess.run([action, path], cwd=cwd)
+            if event.mask & mask:
+                path = event.pathname.replace(realpath, abspath)
+                cwd = os.path.dirname(os.path.realpath(__file__)) if relative else None
+                logging.debug(f'Running {action} {path}' + (f' in working directory {cwd}' if cwd else ''))
+                subprocess.run([action, path], cwd=cwd)
 
         return handle_event
 
@@ -51,7 +52,7 @@ if __name__ == '__main__':
 
             for path in glob.iglob(pattern):
                 wm.add_watch(path, mask,
-                             proc_fun=handler.generate_handler(path, path, action, action_relative),
+                             proc_fun=handler.generate_handler(path, path, mask, action, action_relative),
                              rec=recursive, auto_add=True)
                 logging.info(f'Establishing watches for {path} with action {action}')
 
@@ -61,7 +62,8 @@ if __name__ == '__main__':
                         realpath = os.path.realpath(subdir)
                         abspath = os.path.abspath(subdir)
                         wm.add_watch(realpath, mask,
-                                     proc_fun=handler.generate_handler(realpath, abspath, action, action_relative),
+                                     proc_fun=handler.generate_handler(realpath, abspath, mask, action,
+                                                                       action_relative),
                                      rec=recursive, auto_add=True)
                         logging.info(f'Establishing watches for {realpath} -> {abspath} with action {action}')
 
