@@ -18,6 +18,7 @@ class EventHandler:
             if event.maskname == MASKNAME:
                 path = event.pathname.replace(realpath, abspath)
                 cwd = os.path.dirname(os.path.realpath(__file__)) if relative else None
+                print(f'Running {action} {path}' + f' in working directory {cwd}' if cwd else '')
                 subprocess.run([action, path], cwd=cwd)
 
         return handle_event
