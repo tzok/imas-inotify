@@ -8,19 +8,14 @@ import sys
 
 import pyinotify
 
-CLOSE_WRITE = pyinotify.EventsCodes.FLAG_COLLECTIONS['OP_FLAGS']['IN_CLOSE_WRITE']
-CLOSE_NOWRITE = pyinotify.EventsCodes.FLAG_COLLECTIONS['OP_FLAGS']['IN_CLOSE_NOWRITE']
-MASK = CLOSE_WRITE | CLOSE_NOWRITE
-
 
 class EventHandler:
     def generate_handler(self, realpath: str, abspath: str, action: str, relative: bool):
         def handle_event(event: pyinotify.Event):
-            if event.mask & MASK:
-                path = event.pathname.replace(realpath, abspath)
-                cwd = os.path.dirname(os.path.realpath(__file__)) if relative else None
-                print(f'Running {action} {path}' + (f' in working directory {cwd}' if cwd else ''))
-                subprocess.run([action, path], cwd=cwd)
+            path = event.pathname.replace(realpath, abspath)
+            cwd = os.path.dirname(os.path.realpath(__file__)) if relative else None
+            print(f'Running {action} {path}' + (f' in working directory {cwd}' if cwd else ''))
+            subprocess.run([action, path], cwd=cwd)
 
         return handle_event
 
@@ -30,8 +25,6 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(description='Watch for creation of pulsefiles')
     parser.add_argument('--config', '-c', help=f'configuration file [default={config}]', default=config)
-    parser.add_argument('--dry-run', '-d', help='do not watch for files, just print out what would happen',
-                        action='store_true')
     args = parser.parse_args()
 
     if not os.path.exists(config):
@@ -46,14 +39,17 @@ if __name__ == '__main__':
     ini.read(args.config)
 
     for section in ini.sections():
-        if 'glob' in ini[section] and 'action' in ini[section]:
+        if all(name in ini[section] for name in ('mask', 'glob', 'recursive', 'action', 'action_relative')):
+            mask = pyinotify.EventsCodes.FLAG_COLLECTIONS['OP_FLAGS'][ini[section]['mask']]
             pattern = os.path.expanduser(os.path.expandvars(ini[section]['glob']))
+            recursive = bool(ini[section]['recursive'])
             action = ini[section]['action']
-            relative = bool(ini[section]['relative']) if 'relative' in ini[section] else False
+            action_relative = bool(ini[section]['relative'])
 
             for path in glob.iglob(pattern):
-                wm.add_watch(path, MASK, proc_fun=handler.generate_handler(path, path, action, relative), rec=True,
-                             auto_add=True)
+                wm.add_watch(path, mask,
+                             proc_fun=handler.generate_handler(path, path, action, action_relative),
+                             rec=recursive, auto_add=True)
                 print(f'Establishing watches for {path} with action {action}')
 
                 for subdir in os.listdir(path):
@@ -61,9 +57,9 @@ if __name__ == '__main__':
                     if os.path.islink(subdir):
                         realpath = os.path.realpath(subdir)
                         abspath = os.path.abspath(subdir)
-                        wm.add_watch(realpath, MASK,
-                                     proc_fun=handler.generate_handler(realpath, abspath, action, relative), rec=True,
-                                     auto_add=True)
+                        wm.add_watch(realpath, mask,
+                                     proc_fun=handler.generate_handler(realpath, abspath, action, action_relative),
+                                     rec=recursive, auto_add=True)
                         print(f'Establishing watches for {realpath} -> {abspath} with action {action}')
 
     notifier.loop()
