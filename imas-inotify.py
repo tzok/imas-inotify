@@ -13,11 +13,12 @@ MASK = pyinotify.EventsCodes.FLAG_COLLECTIONS['OP_FLAGS'][MASKNAME]
 
 
 class EventHandler:
-    def generate_handler(self, realpath: str, abspath: str, action: str):
+    def generate_handler(self, realpath: str, abspath: str, action: str, relative: bool):
         def handle_event(event: pyinotify.Event):
             if event.maskname == MASKNAME:
                 path = event.pathname.replace(realpath, abspath)
-                subprocess.run([action, path])
+                cwd = os.path.dirname(os.path.realpath(__file__)) if relative else None
+                subprocess.run([action, path], cwd=cwd)
 
         return handle_event
 
@@ -46,8 +47,11 @@ if __name__ == '__main__':
         if 'glob' in ini[section] and 'action' in ini[section]:
             pattern = os.path.expanduser(os.path.expandvars(ini[section]['glob']))
             action = ini[section]['action']
+            relative = bool(ini[section]['relative']) if 'relative' in ini[section] else False
+
             for path in glob.iglob(pattern):
-                wm.add_watch(path, MASK, proc_fun=handler.generate_handler(path, path, action), rec=True, auto_add=True)
+                wm.add_watch(path, MASK, proc_fun=handler.generate_handler(path, path, action, relative), rec=True,
+                             auto_add=True)
                 print(f'Establishing watches for {path} with action {action}')
 
                 for subdir in os.listdir(path):
@@ -55,8 +59,9 @@ if __name__ == '__main__':
                     if os.path.islink(subdir):
                         realpath = os.path.realpath(subdir)
                         abspath = os.path.abspath(subdir)
-                        wm.add_watch(realpath, MASK, proc_fun=handler.generate_handler(realpath, abspath, action),
-                                     rec=True, auto_add=True)
+                        wm.add_watch(realpath, MASK,
+                                     proc_fun=handler.generate_handler(realpath, abspath, action, relative), rec=True,
+                                     auto_add=True)
                         print(f'Establishing watches for {realpath} -> {abspath} with action {action}')
 
     notifier.loop()
