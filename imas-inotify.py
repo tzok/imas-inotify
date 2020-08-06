@@ -2,6 +2,7 @@
 import argparse
 import configparser
 import glob
+import logging
 import os
 import subprocess
 import sys
@@ -14,7 +15,7 @@ class EventHandler:
         def handle_event(event: pyinotify.Event):
             path = event.pathname.replace(realpath, abspath)
             cwd = os.path.dirname(os.path.realpath(__file__)) if relative else None
-            print(f'Running {action} {path}' + (f' in working directory {cwd}' if cwd else ''))
+            logging.debug(f'Running {action} {path}' + (f' in working directory {cwd}' if cwd else ''))
             subprocess.run([action, path], cwd=cwd)
 
         return handle_event
@@ -28,7 +29,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     if not os.path.exists(config):
-        print(f'File does not exist: {args.config}', file=sys.stderr)
+        logging.error(f'File does not exist: {args.config}')
         sys.exit()
 
     handler = EventHandler()
@@ -50,7 +51,7 @@ if __name__ == '__main__':
                 wm.add_watch(path, mask,
                              proc_fun=handler.generate_handler(path, path, action, action_relative),
                              rec=recursive, auto_add=True)
-                print(f'Establishing watches for {path} with action {action}')
+                logging.info(f'Establishing watches for {path} with action {action}')
 
                 for subdir in os.listdir(path):
                     subdir = os.path.join(path, subdir)
@@ -60,6 +61,6 @@ if __name__ == '__main__':
                         wm.add_watch(realpath, mask,
                                      proc_fun=handler.generate_handler(realpath, abspath, action, action_relative),
                                      rec=recursive, auto_add=True)
-                        print(f'Establishing watches for {realpath} -> {abspath} with action {action}')
+                        logging.info(f'Establishing watches for {realpath} -> {abspath} with action {action}')
 
     notifier.loop()
