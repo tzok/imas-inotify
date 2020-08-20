@@ -13,6 +13,7 @@ import pyinotify
 class EventHandler:
     def generate_handler(self, realpath: str, abspath: str, mask: int, action: str, relative: bool):
         def handle_event(event: pyinotify.Event):
+            logging.debug(f'Received inotify event: {event}')
             if event.mask & mask:
                 path = event.pathname.replace(realpath, abspath)
                 cwd = os.path.dirname(os.path.realpath(__file__)) if relative else None
@@ -23,13 +24,14 @@ class EventHandler:
 
 
 if __name__ == '__main__':
-    logging.basicConfig(level=logging.INFO)
-
     config = os.path.abspath(os.path.join(os.path.dirname(__file__), 'config.ini'))
 
     parser = argparse.ArgumentParser(description='Watch for creation of pulsefiles')
     parser.add_argument('--config', '-c', help=f'configuration file [default={config}]', default=config)
+    parser.add_argument('--verbose', '-v', help=f'enable verbose output', action='store_true')
     args = parser.parse_args()
+
+    logging.basicConfig(level=logging.DEBUG if args.verbose else logging.INFO)
 
     if not os.path.exists(config):
         logging.error(f'File does not exist: {args.config}')
