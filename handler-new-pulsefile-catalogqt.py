@@ -21,7 +21,7 @@ def parse_path(core: str) -> Tuple[str, str, str, int, int]:
     core, _ = os.path.split(core)           # imas/public                   imasdb
     user, _ = os.path.split(core)           # imas                          public
 
-    if user == 'mnt':
+    if user in ('', '/', 'mnt'):
         user = 'imas'
 
     number = basename.replace('ids_', '')
