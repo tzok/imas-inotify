@@ -65,7 +65,8 @@ if __name__ == '__main__':
                 wm.add_watch(path, mask,
                              proc_fun=handler.generate_handler(path, path, mask, action, action_relative, arguments),
                              rec=recursive, auto_add=True)
-                logging.info(f'Establishing watches for {path} with action {action} {arguments}')
+                arguments_flat = ' '.join(arguments)
+                logging.info(f'Establishing watches for {path} with action {action} {arguments_flat}')
 
                 for subdir in os.listdir(path):
                     subdir = os.path.join(path, subdir)
