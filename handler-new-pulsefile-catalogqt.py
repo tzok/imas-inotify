@@ -2,7 +2,6 @@
 import json
 import logging
 import os
-import re
 import subprocess
 import sys
 from typing import Tuple
@@ -15,11 +14,19 @@ def parse_path(core: str) -> Tuple[str, str, str, int, int]:
     :param core: The path to file without extension i.e. /home/imas/public/imasdb/test/3/0/ids_10001
     :return: A 5-tuple with user, machine, version, shot and run.
     '''
-    match = re.search(r'.+/(.+?)/public/imasdb/(.+?)/([^/]+).*', core)
-    user, tokamak, version = match.group(1), match.group(2), match.group(3)
-    number = os.path.basename(core).replace('ids_', '')
+    core, basename = os.path.split(core)    # imas/public/imasdb/test/3/0   ids_10001
+    core, run_mult = os.path.split(core)    # imas/public/imasdb/test/3     0
+    core, version = os.path.split(core)     # imas/public/imasdb/test       3
+    core, tokamak = os.path.split(core)     # imas/public/imasdb            test
+    core, _ = os.path.split(core)           # imas/public                   imasdb
+    user, _ = os.path.split(core)           # imas                          public
+
+    if user == 'mnt':
+        user = 'imas'
+
+    number = basename.replace('ids_', '')
     shot = int(number[:-4].lstrip('0'))  # last 4 digits are for run
-    run = os.path.basename(os.path.dirname(core)) + number[-4:]
+    run = run_mult + number[-4:]
     run = run.lstrip('0')
     run = int(run) if run else 0
     return user, tokamak, version, shot, run
