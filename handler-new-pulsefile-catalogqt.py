@@ -1,9 +1,11 @@
 #! /usr/bin/env python
+import argparse
 import json
 import logging
 import os
 import subprocess
 import sys
+
 from typing import Tuple
 
 
@@ -14,12 +16,12 @@ def parse_path(core: str) -> Tuple[str, str, str, int, int]:
     :param core: The path to file without extension i.e. /home/imas/public/imasdb/test/3/0/ids_10001
     :return: A 5-tuple with user, machine, version, shot and run.
     '''
-    core, basename = os.path.split(core)    # imas/public/imasdb/test/3/0   ids_10001
-    core, run_mult = os.path.split(core)    # imas/public/imasdb/test/3     0
-    core, version = os.path.split(core)     # imas/public/imasdb/test       3
-    core, tokamak = os.path.split(core)     # imas/public/imasdb            test
-    core, _ = os.path.split(core)           # imas/public                   imasdb
-    user, _ = os.path.split(core)           # imas                          public
+    core, basename = os.path.split(core)  # imas/public/imasdb/test/3/0   ids_10001
+    core, run_mult = os.path.split(core)  # imas/public/imasdb/test/3     0
+    core, version = os.path.split(core)  # imas/public/imasdb/test       3
+    core, tokamak = os.path.split(core)  # imas/public/imasdb            test
+    core, _ = os.path.split(core)  # imas/public                   imasdb
+    user, _ = os.path.split(core)  # imas                          public
 
     if user in ('', '/', 'mnt'):
         user = 'imas'
@@ -33,6 +35,12 @@ def parse_path(core: str) -> Tuple[str, str, str, int, int]:
 
 
 if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description='Watch for creation of pulsefiles')
+    parser.add_argument('--jar', help='path to catalog-ws-client JAR',
+                        default='/catalog_qt_2/client/catalog-ws-client/target/catalogAPI.jar')
+    parser.add_argument('--url', help='URL of webservice endpoint', default='http://server:8080')
+    args = parser.parse_args()
+
     logging.basicConfig(level=logging.DEBUG)
 
     if len(sys.argv) == 2:
@@ -65,12 +73,12 @@ if __name__ == '__main__':
 
             command = ['java',
                        '-jar',
-                       '/home/imas/opt/catalog_qt_2/client/catalog-ws-client/target/catalogAPI.jar',
+                       args.jar,
                        '-addRequest',
                        '--user',
                        'imas-inotify-auto-updater',
                        '--url',
-                       'http://localhost:8080',
+                       args.url,
                        '--experiment-uri',
                        f'mdsplus:/?user={user};machine={tokamak};version={version};shot={shot};run={run}{occurrence}']
             logging.info(f'Executing command: {" ".join(command)}')

@@ -11,16 +11,22 @@ import pyinotify
 
 
 class EventHandler:
-    def generate_handler(self, realpath: str, abspath: str, mask: int, action: str, relative: bool):
+    def generate_handler(self, realpath: str, abspath: str, mask: int, action: str, relative: bool, arguments: list):
         def handle_event(event: pyinotify.Event):
             logging.debug(f'Received inotify event: {event}')
             if event.mask & mask:
                 path = event.pathname.replace(realpath, abspath)
                 cwd = os.path.dirname(os.path.realpath(__file__)) if relative else None
                 logging.debug(f'Running {action} {path}' + (f' in working directory {cwd}' if cwd else ''))
-                subprocess.run([action, path], cwd=cwd)
+                subprocess.run([action, path] + arguments, cwd=cwd)
 
         return handle_event
+
+
+def convert_to_arguments(additional: dict):
+    for k, v in additional.items():
+        yield '--{}'.format(k)
+        yield v
 
 
 if __name__ == '__main__':
@@ -44,19 +50,22 @@ if __name__ == '__main__':
     ini = configparser.ConfigParser()
     ini.read(args.config)
 
+    required = {'mask', 'glob', 'recursive', 'action', 'action_relative'}
+
     for section in ini.sections():
-        if all(name in ini[section] for name in ('mask', 'glob', 'recursive', 'action', 'action_relative')):
+        if all(name in ini[section] for name in required):
             mask = pyinotify.EventsCodes.FLAG_COLLECTIONS['OP_FLAGS'][ini[section]['mask']]
             pattern = os.path.expanduser(os.path.expandvars(ini[section]['glob']))
             recursive = bool(ini[section]['recursive'])
             action = ini[section]['action']
             action_relative = bool(ini[section]['action_relative'])
+            arguments = list(convert_to_arguments({key: ini[section][key] for key in ini[section].keys() - required}))
 
             for path in glob.iglob(pattern):
                 wm.add_watch(path, mask,
-                             proc_fun=handler.generate_handler(path, path, mask, action, action_relative),
+                             proc_fun=handler.generate_handler(path, path, mask, action, action_relative, arguments),
                              rec=recursive, auto_add=True)
-                logging.info(f'Establishing watches for {path} with action {action}')
+                logging.info(f'Establishing watches for {path} with action {action} {arguments}')
 
                 for subdir in os.listdir(path):
                     subdir = os.path.join(path, subdir)
