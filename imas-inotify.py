@@ -17,8 +17,9 @@ class EventHandler:
             if event.mask & mask:
                 path = event.pathname.replace(realpath, abspath)
                 cwd = os.path.dirname(os.path.realpath(__file__)) if relative else None
-                logging.debug(f'Running {action} {path}' + (f' in working directory {cwd}' if cwd else ''))
-                subprocess.run([action, path] + arguments, cwd=cwd)
+                arguments_flat = ' '.join(arguments)
+                logging.debug(f'Running {action} {arguments_flat} {path}' + (f' in working directory {cwd}' if cwd else ''))
+                subprocess.run([action] + arguments + [path], cwd=cwd)
 
         return handle_event
 
