@@ -55,7 +55,9 @@ if __name__ == '__main__':
 
     for section in ini.sections():
         if all(name in ini[section] for name in required):
-            mask = pyinotify.EventsCodes.FLAG_COLLECTIONS['OP_FLAGS'][ini[section]['mask']]
+            mask = 0
+            for partial in ini[section]['mask'].split():
+                mask |= pyinotify.EventsCodes.FLAG_COLLECTIONS['OP_FLAGS'][partial]
             pattern = os.path.expanduser(os.path.expandvars(ini[section]['glob']))
             recursive = bool(ini[section]['recursive'])
             action = ini[section]['action']
