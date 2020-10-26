@@ -74,6 +74,7 @@ if __name__ == '__main__':
         command = ['java',
                    '-jar',
                    args.jar,
+                   '--run-as-service',
                    '-addRequest',
                    '--user',
                    'imas-inotify-auto-updater',
