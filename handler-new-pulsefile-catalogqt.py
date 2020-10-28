@@ -15,14 +15,15 @@ def parse_path(core: str) -> Tuple[str, str, str, int, int]:
     :param core: The path to file without extension i.e. /home/imas/public/imasdb/test/3/0/ids_10001
     :return: A 5-tuple with user, machine, version, shot and run.
     '''
-    core, basename = os.path.split(core)  # imas/public/imasdb/test/3/0 ids_10001
-    core, run_mult = os.path.split(core)  # imas/public/imasdb/test/3 0
-    core, version = os.path.split(core)  # imas/public/imasdb/test 3
-    core, tokamak = os.path.split(core)  # imas/public/imasdb test
-    core, _ = os.path.split(core)  # imas/public imasdb
-    user, _ = os.path.split(core)  # imas public
+    core, basename = os.path.split(core)  # /home/imas/public/imasdb/test/3/0 ids_10001
+    core, run_mult = os.path.split(core)  # /home/imas/public/imasdb/test/3 0
+    core, version = os.path.split(core)  # /home/imas/public/imasdb/test 3
+    core, tokamak = os.path.split(core)  # /home/imas/public/imasdb test
+    core, _ = os.path.split(core)  # /home/imas/public imasdb
+    user, _ = os.path.split(core)  # /home/imas public
+    user = os.path.basename(user)
 
-    if user in ('', '/', 'mnt'):
+    if user in ('', 'mnt'):
         user = 'imas'
 
     number = basename.replace('ids_', '')
