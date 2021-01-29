@@ -18,7 +18,8 @@ class EventHandler:
                 path = event.pathname.replace(realpath, abspath)
                 cwd = os.path.dirname(os.path.realpath(__file__)) if relative else None
                 arguments_flat = ' '.join(arguments)
-                logging.debug(f'Running {action} {arguments_flat} {path}' + (f' in working directory {cwd}' if cwd else ''))
+                logging.debug(
+                    f'Running {action} {arguments_flat} {path}' + (f' in working directory {cwd}' if cwd else ''))
                 subprocess.run([action] + arguments + [path], cwd=cwd)
 
         return handle_event
@@ -48,22 +49,29 @@ if __name__ == '__main__':
     wm = pyinotify.WatchManager()
     notifier = pyinotify.Notifier(wm)
 
+    # parse config.ini file
     ini = configparser.ConfigParser()
     ini.read(args.config)
 
+    # required fields per single ini section
     required = {'mask', 'glob', 'recursive', 'action', 'action_relative'}
 
     for section in ini.sections():
         if all(name in ini[section] for name in required):
-            mask = 0
-            for partial in ini[section]['mask'].split():
-                mask |= pyinotify.EventsCodes.FLAG_COLLECTIONS['OP_FLAGS'][partial]
             pattern = os.path.expanduser(os.path.expandvars(ini[section]['glob']))
             recursive = bool(ini[section]['recursive'])
             action = ini[section]['action']
             action_relative = bool(ini[section]['action_relative'])
+
+            # generate or-ed mask with inotify flags
+            mask = 0
+            for partial in ini[section]['mask'].split():
+                mask |= pyinotify.EventsCodes.FLAG_COLLECTIONS['OP_FLAGS'][partial]
+
+            # all ini section entries except the required ones are treated as command line arguments to event handler
             arguments = list(convert_to_arguments({key: ini[section][key] for key in ini[section].keys() - required}))
 
+            # install inotify watches
             for path in glob.iglob(pattern):
                 wm.add_watch(path, mask,
                              proc_fun=handler.generate_handler(path, path, mask, action, action_relative, arguments),
@@ -73,6 +81,7 @@ if __name__ == '__main__':
 
                 for subdir in os.listdir(path):
                     subdir = os.path.join(path, subdir)
+
                     if os.path.islink(subdir):
                         realpath = os.path.realpath(subdir)
                         abspath = os.path.abspath(subdir)
