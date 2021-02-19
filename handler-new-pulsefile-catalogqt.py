@@ -40,6 +40,8 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Watch for creation of pulsefiles')
     parser.add_argument('--jar', help='path to catalog-ws-client JAR',
                         default='/catalog_qt_2/client/catalog-ws-client/target/catalogAPI.jar')
+    parser.add_argument('--debug', help='debugger settings for catalogAPI.jar',
+                        default='')
     parser.add_argument('--url', help='URL of webservice endpoint', default='http://server:8080')
     parser.add_argument('file')
     args = parser.parse_args()
@@ -71,16 +73,31 @@ if __name__ == '__main__':
             occurrence = ''
             logging.info('Did not find occurrence setting, using default value')
 
-        command = ['java',
-                   '-jar',
-                   args.jar,
-                   '--run-as-service',
-                   '-addRequest',
-                   '--user',
-                   'imas-inotify-auto-updater',
-                   '--url',
-                   args.url,
-                   '--experiment-uri',
-                   f'mdsplus:/?user={user};machine={tokamak};version={version};shot={shot};run={run}{occurrence}']
+        if args.debug is None:
+            command = ['java',
+                       '-jar',
+                       args.jar,
+                       '--run-as-service',
+                       '-addRequest',
+                       '--user',
+                       'imas-inotify-auto-updater',
+                       '--url',
+                       args.url,
+                       '--experiment-uri',
+                       f'mdsplus:/?user={user};machine={tokamak};version={version};shot={shot};run={run}{occurrence}']
+        else:
+            command = ['java',
+                       args.debug.replace("'",""),
+                       '-jar',
+                       args.jar,
+                       '--run-as-service',
+                       '-addRequest',
+                       '--user',
+                       'imas-inotify-auto-updater',
+                       '--url',
+                       args.url,
+                       '--experiment-uri',
+                       f'mdsplus:/?user={user};machine={tokamak};version={version};shot={shot};run={run}{occurrence}']
+
         logging.info(f'Executing command: {" ".join(command)}')
         subprocess.run(command)
