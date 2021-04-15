@@ -11,18 +11,18 @@ from typing import Tuple
 def parse_path(core: str) -> Tuple[str, str, str, int, int]:
     '''
     Parse path and filename to retrieve user, machine, version, shot and run.
-
     :param core: The path to file without extension i.e. /home/imas/public/imasdb/test/3/0/ids_10001
     :return: A 5-tuple with user, machine, version, shot and run.
     '''
-    core, basename = os.path.split(core)  # imas/public/imasdb/test/3/0 ids_10001
-    core, run_mult = os.path.split(core)  # imas/public/imasdb/test/3 0
-    core, version = os.path.split(core)  # imas/public/imasdb/test 3
-    core, tokamak = os.path.split(core)  # imas/public/imasdb test
-    core, _ = os.path.split(core)  # imas/public imasdb
-    user, _ = os.path.split(core)  # imas public
+    core, basename = os.path.split(core)  # /home/imas/public/imasdb/test/3/0 ids_10001
+    core, run_mult = os.path.split(core)  # /home/imas/public/imasdb/test/3 0
+    core, version = os.path.split(core)  # /home/imas/public/imasdb/test 3
+    core, tokamak = os.path.split(core)  # /home/imas/public/imasdb test
+    core, _ = os.path.split(core)  # /home/imas/public imasdb
+    user, _ = os.path.split(core)  # /home/imas public
+    user = os.path.basename(user)
 
-    if user in ('', '/', 'mnt'):
+    if user in ('', 'mnt'):
         user = 'imas'
 
     number = basename.replace('ids_', '')
@@ -36,9 +36,13 @@ def parse_path(core: str) -> Tuple[str, str, str, int, int]:
 if __name__ == '__main__':
     logging.basicConfig(level=logging.DEBUG)
 
+    debug_imas_inotify = os.getenv("DEBUG_IMAS_INOTIFY")
+
     parser = argparse.ArgumentParser(description='Watch for creation of pulsefiles')
     parser.add_argument('--jar', help='path to catalog-ws-client JAR',
                         default='/catalog_qt_2/client/catalog-ws-client/target/catalogAPI.jar')
+    parser.add_argument('--debug', help='debugger settings for catalogAPI.jar',
+                        default=None)
     parser.add_argument('--url', help='URL of webservice endpoint', default='http://server:8080')
     parser.add_argument('file')
     args = parser.parse_args()
@@ -70,16 +74,37 @@ if __name__ == '__main__':
             occurrence = ''
             logging.info('Did not find occurrence setting, using default value')
 
-        command = ['java',
-                   '-jar',
-                   args.jar,
-                   '--run-as-service',
-                   '-addRequest',
-                   '--user',
-                   'imas-inotify-auto-updater',
-                   '--url',
-                   args.url,
-                   '--experiment-uri',
-                   f'mdsplus:/?user={user};machine={tokamak};version={version};shot={shot};run={run}{occurrence}']
+        if debug_imas_inotify is None and args.debug is None:
+            command = ['java',
+                       '-jar',
+                       args.jar,
+                       '--run-as-service',
+                       '-addRequest',
+                       '--user',
+                       'imas-inotify-auto-updater',
+                       '--url',
+                       args.url,
+                       '--experiment-uri',
+                       f'mdsplus:/?user={user};machine={tokamak};version={version};shot={shot};run={run}{occurrence}']
+        else:
+            if args.debug is None:
+                debug_string_jwdp='-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=*:32887'
+            else:
+                debug_string_jwdp=args.debug.replace("'","")
+ 
+            command = ['java',
+                       debug_string_jwdp,
+                       '-jar',
+                       args.jar,
+                       '--run-as-service',
+                       '-addRequest',
+                       '--user',
+                       'imas-inotify-auto-updater',
+                       '--url',
+                       args.url,
+                       '--experiment-uri',
+                       f'mdsplus:/?user={user};machine={tokamak};version={version};shot={shot};run={run}{occurrence}']
+
         logging.info(f'Executing command: {" ".join(command)}')
         subprocess.run(command)
+
