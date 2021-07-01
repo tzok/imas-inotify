@@ -1,0 +1,6 @@
+[tmp]
+mask = IN_CREATE IN_MODIFY
+glob = /tmp
+recursive = True
+action = ./handler-example.sh
+action_relative = True
